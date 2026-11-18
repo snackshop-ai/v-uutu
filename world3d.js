@@ -43,7 +43,7 @@ const climb = new THREE.Group(), courtyard = new THREE.Group();
 world.add(climb, courtyard);
 const mat = (color, roughness = .82, metalness = 0) => new THREE.MeshStandardMaterial({ color, roughness, metalness });
 const materials = {
-  stone: mat('#b9ab91'), stepA: mat('#d1c2a4'), stepB: mat('#c0ae90'), riser: mat('#8e806d'),
+  stone: mat('#77766e'), stepA: mat('#88877e'), stepB: mat('#a09b8d'), riser: mat('#625f58'),
   wood: mat('#694438'), darkWood: mat('#432f2a'), red: mat('#8b352d'), redLight: mat('#a84937'),
   wall: mat('#dfcba4'), wallDark: mat('#c2aa7f'), gold: mat('#d3aa56', .38, .48), bronze: mat('#80623b', .38, .55),
   leaf: mat('#557552'), leafLight: mat('#728f62'), pine: mat('#355b50'), water: new THREE.MeshStandardMaterial({ color: '#4c9b9a', roughness: .23, metalness: .1, transparent: true, opacity: .87 }),
@@ -218,7 +218,7 @@ function lantern(parent, x, y, z, scale = 1) {
 function mountainY(x, z) {
   const side = Math.max(0, Math.abs(x) - 2.8);
   const hill = 3.3 * Math.exp(-Math.pow((side - 7.4) / 4.8, 2)) + .58 * Math.sin(z * .24 + x * .35) + .42 * Math.sin(z * .12 - x * .47);
-  return z * (.108 / .48) + hill - Math.max(0, side - 10) * .25 - .75;
+  return z * (.155 / .43) + hill - Math.max(0, side - 10) * .25 - .75;
 }
 function mountainTerrain() {
   const xs = 54, zs = 156, width = 50, length = 68, positions = [], colors = [], indices = [];
@@ -245,43 +245,51 @@ function mountainTerrain() {
   farTerrain.rotation.x = -Math.PI / 2; farTerrain.position.set(0, -8, 27); farTerrain.receiveShadow = true; climb.add(farTerrain);
 }
 
+const birds = [];
+function addBird(parent, x, y, z, scale = 1) {
+  const bird = new THREE.Group(); bird.position.set(x, y, z); parent.add(bird);
+  const feather = mat('#403d38'), wingMat = mat('#625b4c');
+  sphere(bird, .12 * scale, feather, 0, 0, 0, 8);
+  const beak = mesh(bird, new THREE.ConeGeometry(.045 * scale, .16 * scale, 5), materials.gold, .13 * scale, .015 * scale, -.015 * scale); beak.rotation.z = -Math.PI / 2;
+  const wings = [];
+  for (const side of [-1, 1]) { const wing = mesh(bird, new THREE.BoxGeometry(.22 * scale, .035 * scale, .1 * scale), wingMat, side * .13 * scale, .045 * scale, 0); wing.userData.side = side; wings.push(wing); }
+    bird.userData.wings = wings; bird.userData.baseY = y; birds.push(bird); return bird;
+}
 function buildStairway() {
-  const count = 108, depth = .48, rise = .108, tread = new THREE.BoxGeometry(1, .16, depth + .025), riser = new THREE.BoxGeometry(1, .13, .08);
-  box(climb, 7.4, .2, 3.2, materials.stone, 0, -.1, -1.15);
+  const count = 108, depth = .43, rise = .155, tread = new THREE.BoxGeometry(1, .22, depth + .12), riser = new THREE.BoxGeometry(1, .19, .1);
+  box(climb, 7.4, .24, 3.2, materials.stone, 0, -.1, -1.15);
   const treads = new THREE.InstancedMesh(tread, materials.stepA, count), risers = new THREE.InstancedMesh(riser, materials.riser, count);
   const dummy = new THREE.Object3D();
   for (let i = 0; i < count; i++) {
-    const taperWidth = 6.55 - i * .009;
-    dummy.position.set(0, i * rise + .015, i * depth); dummy.scale.set(taperWidth, 1, 1); dummy.updateMatrix(); treads.setMatrixAt(i, dummy.matrix);
-    treads.setColorAt(i, new THREE.Color(i % 3 === 0 ? '#cbb99a' : '#b9a98d'));
-    dummy.position.set(0, i * rise - .055, i * depth + depth * .42); dummy.scale.set(taperWidth, 1, 1); dummy.updateMatrix(); risers.setMatrixAt(i, dummy.matrix);
+    const width = 6.35 - i * .009, wobble = Math.sin(i * 1.7) * .035;
+    dummy.position.set(wobble, i * rise + .015, i * depth); dummy.rotation.y = Math.sin(i * 2.1) * .008; dummy.scale.set(width, 1, 1); dummy.updateMatrix(); treads.setMatrixAt(i, dummy.matrix);
+    treads.setColorAt(i, new THREE.Color(['#929087','#77776f','#a19b8e','#85847a'][i % 4]));
+    dummy.position.set(wobble, i * rise - .075, i * depth + depth * .42); dummy.scale.set(width, 1, 1); dummy.updateMatrix(); risers.setMatrixAt(i, dummy.matrix);
   }
   treads.instanceMatrix.needsUpdate = true; risers.instanceMatrix.needsUpdate = true; treads.castShadow = true; treads.receiveShadow = true; risers.castShadow = true; climb.add(treads, risers);
-  const railPts = [[], []];
-  for (let i = 0; i <= count; i += 3) {
-    const z = i * depth, y = i * rise;
-    for (let side = 0; side < 2; side++) {
-      const sign = side ? 1 : -1, x = sign * (3.5 - i * .0045);
-      cylinder(climb, .055, .075, .9, materials.wood, x, y + .57, z, 7);
-      sphere(climb, .11, materials.gold, x, y + 1.06, z, 7);
-      railPts[side].push(new THREE.Vector3(x, y + .94, z));
-    }
+  // Uneven stone shoulders instead of handrails keep the path feeling cut into the mountain.
+  for (let i = 5; i < count; i += 4) for (const side of [-1, 1]) {
+    const z = i * depth + (i % 2) * .15, x = side * (3.65 + Math.sin(i * 3) * .42), y = i * rise;
+    const boulder = mesh(climb, new THREE.DodecahedronGeometry(.57 + (i % 3) * .08, 0), mat(i % 2 ? '#78776e' : '#928e82'), x, y + .05, z);
+    boulder.scale.set(1.25, .75, .8); boulder.rotation.set(i * .13, i * .77, i * .21);
   }
-  for (const points of railPts) mesh(climb, new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), 220, .065, 7, false), materials.wood);
-  for (let i = 8; i < count; i += 12) {
-    const z = i * depth, y = i * rise, side = i % 24 ? 1 : -1;
-    lantern(climb, side * (4.35 - i * .004), y - .18, z, .62);
+  for (let i = 8; i < count; i += 18) { const side = i % 36 ? 1 : -1; lantern(climb, side * 4.35, i * rise - .18, i * depth, .58); }
+  const treeSteps = [12, 29, 48, 67, 86, 101];
+  treeSteps.forEach((i, n) => {
+    const side = n % 2 ? 1 : -1, x = side * (7.2 + (n % 3) * .7), z = i * depth + (n % 2) * 1.5;
+    const size = 2.0 + (n % 3) * .4, t = tree(climb, x, z, size, n % 3 === 0, mountainY(x, z));
+    addBird(t, .35 * size, 3.2 * size, .14 * size, .72 + (n % 2) * .12);
+    if (n % 2 === 0) addBird(t, -.25 * size, 2.8 * size, .18 * size, .58);
+  });
+  // Sparse grass tufts grow between stones and on the trail shoulders.
+  const grassMat = mat('#667b52'), grassGeo = new THREE.ConeGeometry(.075, .42, 4), grass = new THREE.InstancedMesh(grassGeo, grassMat, 132);
+  let gi = 0;
+  for (let i = 3; i < count; i += 5) for (const side of [-1, 1]) {
+    const x = side * (3.15 + ((i * 7) % 9) * .28), z = i * depth + ((i * 13) % 11) * .035, y = mountainY(x, z) + .17;
+    dummy.position.set(x, y, z); dummy.rotation.z = side * (.18 + (i % 4) * .07); dummy.scale.set(1, .75 + (i % 3) * .2, 1); dummy.updateMatrix(); grass.setMatrixAt(gi++, dummy.matrix);
   }
-  for (let i = 4; i < count; i += 7) {
-    const z = i * depth, y = i * rise, side = i % 2 ? 1 : -1;
-    const tx = side * (6 + (i % 4) * 1.2), tz = z + (i % 3) * .7;
-    tree(climb, tx, tz, .55 + (i % 3) * .11, i % 5 !== 0, mountainY(tx, tz));
-  }
-  for (let i = 10; i < count; i += 17) {
-    const z = i * depth, y = i * rise;
-    const rockMesh = mesh(climb, new THREE.DodecahedronGeometry(.75, 0), mat(i % 2 ? '#788274' : '#a29a83'), i % 2 ? -5 : 5, y + .15, z + 1.1);
-    rockMesh.scale.set(1.5, .9, 1.2);
-  }
+  grass.count = gi; grass.instanceMatrix.needsUpdate = true; grass.castShadow = true; climb.add(grass);
+  for (let i = 10; i < count; i += 19) { const rockMesh = mesh(climb, new THREE.DodecahedronGeometry(.75, 0), mat(i % 2 ? '#72766d' : '#979286'), i % 2 ? -5 : 5, i * rise + .15, i * depth + 1.1); rockMesh.scale.set(1.5, .9, 1.2); }
   return { depth, rise, length: count * depth, height: count * rise };
 }
 
@@ -456,7 +464,7 @@ function positionTargets() {
   const state = game.getState();
   const inside = !!state.inside;
   const step = Math.max(0, Math.min(108, Number(state.routeStep) || 0));
-  const climbY = step === 0 ? 0 : (step - 1) * trail.rise + .1;
+  const climbY = step === 0 ? 0 : (step - 1) * trail.rise + .16;
   if (inside !== activeInside) {
     activeInside = inside; climb.visible = !inside; courtyard.visible = inside;
     actor.position.set(inside ? (state.worldX || 0) * 2 : 0, inside ? 0.12 : climbY, inside ? (state.worldZ ?? 3) * 2 : step * trail.depth);
@@ -499,6 +507,11 @@ canvas.addEventListener('pointercancel', () => { drag = null; });
 function animate() {
   const dt = Math.min(clock.getDelta(), .04), elapsed = clock.elapsedTime, state = game.getState();
   positionTargets();
+  for (let i = 0; i < birds.length; i++) {
+    const bird = birds[i], flap = Math.sin(elapsed * 7 + i * 2.4) * .35;
+    bird.userData.wings.forEach(wing => { wing.rotation.z = wing.userData.side * flap; });
+    bird.position.y = bird.userData.baseY + Math.sin(elapsed * 1.3 + i) * .035;
+  }
   const d = actor.userData, dx = d.targetX - actor.position.x, dy = d.targetY - actor.position.y, dz = d.targetZ - actor.position.z;
   const distance = Math.hypot(dx, dz);
   walking = distance > .035;
@@ -530,8 +543,28 @@ window.voUu3d = {
   resize,
   render() { positionTargets(); renderer.render(scene, camera); },
   ringBell() { bellWobble = Math.min(1, bellWobble + .85); },
+  setSoundEnabled(enabled) {
+    if (window.voUuBirdTimer) clearTimeout(window.voUuBirdTimer);
+    if (!enabled) return;
+    const sing = () => {
+      if (!game.soundEnabled?.()) return;
+      try {
+        const ctx = window.voUuAudioContext || (window.voUuAudioContext = new (window.AudioContext || window.webkitAudioContext)());
+        if (ctx.state === 'suspended') ctx.resume();
+        const now = ctx.currentTime, base = 1700 + Math.random() * 700;
+        [0, .17, .39].forEach((offset, index) => {
+          const osc = ctx.createOscillator(), gain = ctx.createGain(); osc.type = 'sine';
+          osc.frequency.setValueAtTime(base + index * 260, now + offset);
+          osc.frequency.exponentialRampToValueAtTime(base * .78, now + offset + .11);
+          gain.gain.setValueAtTime(.0001, now + offset); gain.gain.exponentialRampToValueAtTime(.025, now + offset + .025); gain.gain.exponentialRampToValueAtTime(.0001, now + offset + .14);
+          osc.connect(gain); gain.connect(ctx.destination); osc.start(now + offset); osc.stop(now + offset + .15);
+        });
+      } catch {}
+      window.voUuBirdTimer = setTimeout(sing, 9000 + Math.random() * 9000);
+    };
+    window.voUuBirdTimer = setTimeout(sing, 1800 + Math.random() * 1800);
+  },
 };
 resize();
 renderer.setAnimationLoop(animate);
-
 
