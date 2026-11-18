@@ -377,7 +377,7 @@ function makeCourtyard() {
   makeMeritStele(positions.pond);
   makeCenser(positions.censer);
   makeBellTower(positions.bell);
-  for (const pos of [[-14, 8], [-14, -8], [14, -8], [-13, -15], [13, -15], [-10, 15], [10, 15]]) tree(courtyard, pos[0], pos[1], 1.1, true);
+  for (const pos of [[-14, 8], [-14, -14], [14, -8], [-13, -15], [13, -15], [-10, 15], [10, 15]]) tree(courtyard, pos[0], pos[1], 1.1, true);
   for (const [x, z] of [[-9, 2], [9, 2], [-9, -9], [9, -9]]) lantern(courtyard, x, 0, z, .9);
   const boundaryShrine = building(courtyard, { x: 0, z: -14, width: 4.2, depth: 3.4, wallHeight: 2.6, name: 'TAM QUAN' });
   boundaryShrine.group.scale.set(.78, .78, .78);
@@ -386,7 +386,7 @@ function makeCourtyard() {
 let fish = [], smoke = [], bell = null, bellWobble = 0;
 function makePond(pos) {
   const group = new THREE.Group(); group.position.set(pos.x * 2, 0, pos.z * 2); courtyard.add(group);
-  group.scale.setScalar(.78);
+  group.scale.set(.68, .78, 1.12);
   const border = mesh(group, new THREE.CylinderGeometry(4.15, 4.25, .42, 40), materials.stone, 0, .06, 0);
   const water = mesh(group, new THREE.CircleGeometry(3.92, 40), materials.water, 0, .29, 0, { cast: false }); water.rotation.x = -Math.PI / 2;
   const edge = mesh(group, new THREE.TorusGeometry(4, .16, 8, 48), materials.wallDark, 0, .32, 0); edge.rotation.x = Math.PI / 2;
@@ -406,7 +406,7 @@ function makePond(pos) {
 let meritStele = null;
 function makeMeritStele(pos) {
   const group = new THREE.Group();
-  group.position.set(pos.x * 2, 0, pos.z * 2 + 4);
+  group.position.set(pos.x * 2, 0, pos.z * 2 + 6);
   courtyard.add(group);
   box(group, 2.05, .28, .9, materials.stone, 0, .14, 0);
   box(group, 1.7, 2.0, .34, materials.riser, 0, 1.25, 0);
