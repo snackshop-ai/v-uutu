@@ -372,13 +372,12 @@ function makeCourtyard() {
   building(courtyard, { ...positions.shop, width: 4.4, depth: 3.6, wallHeight: 2.8, name: 'SẮM LỄ' });
   building(courtyard, { ...positions.hall, z: positions.hall.z - .7, width: 8.8, depth: 6.4, wallHeight: 4.2, name: 'CHÍNH ĐIỆN', tiers: 2, main: true });
   building(courtyard, { ...positions.dining, width: 5.4, depth: 4.0, wallHeight: 3.1, name: 'TRAI ĐƯỜNG' });
-  building(courtyard, { ...positions.tea, width: 4.8, depth: 3.0, wallHeight: 2.8, name: 'TRÀ THẤT' });
+  building(courtyard, { ...positions.tea, width: 4.2, depth: 3.0, wallHeight: 2.8, name: 'TRÀ THẤT' });
   makePond(positions.pond);
   makeMeritStele(positions.pond);
   makeCenser(positions.censer);
   makeBellTower(positions.bell);
-  for (const pos of [[-14, 8], [-14, -14], [14, -8], [-13, -15], [13, -15], [-10, 15], [10, 15]]) tree(courtyard, pos[0], pos[1], 1.1, true);
-  for (const [x, z] of [[-9, 2], [9, 2], [-9, -9], [9, -9]]) lantern(courtyard, x, 0, z, .9);
+  for (const pos of [[-14, 8], [-14, -14], [18, -14], [-13, -15], [13, -15], [-10, 15], [10, 15]]) tree(courtyard, pos[0], pos[1], 1.1, true);
   const boundaryShrine = building(courtyard, { x: 0, z: -14, width: 4.2, depth: 3.4, wallHeight: 2.6, name: 'TAM QUAN' });
   boundaryShrine.group.scale.set(.78, .78, .78);
 }
@@ -475,32 +474,64 @@ function makeBellTower(pos) {
 
 function makeCharacter() {
   const actor = new THREE.Group(); scene.add(actor);
-  const robeMat = mat('#557760', .72), sashMat = mat('#a64837'), skinMat = mat('#d8b38f'), dark = mat('#332c2b');
+  const robeMat = mat('#557760', .86), sashMat = mat('#a64837', .72), skinMat = mat('#d8b38f', .92), dark = mat('#332c2b');
+  const trousers = mat('#3c3935'), shoeMat = mat('#302b28'), eyeWhite = mat('#f2eee4'), iris = mat('#382d27');
   const torso = new THREE.Group(); actor.add(torso);
-  const robe = mesh(torso, new THREE.CylinderGeometry(.24, .48, 1.08, 12), robeMat, 0, .78, 0);
-  const hem = mesh(torso, new THREE.CylinderGeometry(.45, .49, .12, 12), mat('#c2a66c'), 0, .28, 0);
-  box(torso, .13, .8, .08, sashMat, .08, .87, .25);
-  cylinder(torso, .14, .14, .07, materials.gold, 0, 1.35, .01, 10);
-  const head = sphere(torso, .24, skinMat, 0, 1.52, 0, 14);
-  const hair = sphere(torso, .235, dark, 0, 1.65, -.035, 12); hair.scale.set(1, .62, 1);
+  mesh(torso, new THREE.CylinderGeometry(.29, .43, .86, 18), robeMat, 0, .87, 0);
+  mesh(torso, new THREE.CylinderGeometry(.3, .49, .42, 18), robeMat, 0, .43, 0);
+  cylinder(torso, .34, .35, .105, sashMat, 0, .75, 0, 18);
+  cylinder(torso, .435, .48, .09, mat('#b79a68'), 0, .235, 0, 18);
+  // Overlapping collar panels and a visible sash give the robe a tailored silhouette.
+  box(torso, .12, .48, .035, sashMat, -.065, 1.12, -.315).rotation.z = -.22;
+  box(torso, .12, .48, .035, mat('#d8c49a'), .065, 1.12, -.315).rotation.z = .22;
+  box(torso, .1, .55, .045, sashMat, .09, 1.04, -.335).rotation.z = -.12;
+  const neck = cylinder(torso, .09, .105, .2, skinMat, 0, 1.4, 0, 12);
+  neck.castShadow = true;
+  const head = sphere(torso, .235, skinMat, 0, 1.68, 0, 18); head.scale.set(.9, 1.08, .82);
+  for (const side of [-1, 1]) sphere(torso, .065, skinMat, side * .205, 1.68, -.005, 9);
+  // Eyes, brows, nose and mouth face toward the character's forward (-Z) direction.
+  for (const side of [-1, 1]) {
+    sphere(torso, .038, eyeWhite, side * .082, 1.725, -.177, 9);
+    sphere(torso, .02, iris, side * .082, 1.724, -.209, 8);
+    box(torso, .085, .022, .025, dark, side * .082, 1.78, -.178);
+  }
+  sphere(torso, .036, skinMat, 0, 1.69, -.215, 8);
+  box(torso, .075, .014, .018, mat('#815950'), 0, 1.615, -.184);
+  const maleHair = new THREE.Group(); torso.add(maleHair);
+  const maleCap = sphere(maleHair, .24, dark, 0, 1.82, .025, 14); maleCap.scale.set(1.02, .47, .98);
+  for (const side of [-1, 1]) box(maleHair, .07, .2, .14, dark, side * .19, 1.68, .025);
+  const femaleHair = new THREE.Group(); torso.add(femaleHair);
+  const femaleCap = sphere(femaleHair, .24, dark, 0, 1.82, .045, 14); femaleCap.scale.set(1.04, .5, 1.02);
+  const backHair = sphere(femaleHair, .22, dark, 0, 1.52, .13, 12); backHair.scale.set(1.1, 1.25, .72);
+  for (const side of [-1, 1]) {
+    const lock = sphere(femaleHair, .14, dark, side * .2, 1.51, -.015, 10); lock.scale.set(.65, 1.45, .8);
+    sphere(femaleHair, .035, materials.gold, side * .224, 1.65, -.04, 7);
+  }
+  sphere(femaleHair, .115, dark, 0, 2.015, .12, 10);
+  const femaleSash = new THREE.Group(); torso.add(femaleSash);
+  beam(femaleSash, [-.3, 1.3, -.18], [.28, .78, -.2], .055, mat('#ead4aa'), 8);
+  sphere(femaleSash, .065, materials.gold, .28, .78, -.2, 8);
   const arms = [], legs = [];
   for (const side of [-1, 1]) {
-    const arm = new THREE.Group(); arm.position.set(side * .31, 1.15, 0); torso.add(arm);
-    cylinder(arm, .075, .095, .48, robeMat, 0, -.23, 0, 8);
-    sphere(arm, .085, skinMat, 0, -.49, 0, 8); arms.push(arm);
-    const leg = new THREE.Group(); leg.position.set(side * .17, .34, 0); actor.add(leg);
-    cylinder(leg, .11, .13, .4, dark, 0, -.13, 0, 8);
-    const shoe = box(leg, .2, .1, .32, dark, 0, -.34, -.06);
+    const arm = new THREE.Group(); arm.position.set(side * .34, 1.23, 0); torso.add(arm);
+    sphere(arm, .16, robeMat, 0, -.015, 0, 10);
+    cylinder(arm, .125, .105, .42, robeMat, 0, -.22, 0, 10);
+    cylinder(arm, .095, .085, .36, skinMat, 0, -.59, -.015, 10);
+    sphere(arm, .085, skinMat, 0, -.79, -.025, 9); arms.push(arm);
+    const leg = new THREE.Group(); leg.position.set(side * .16, .39, 0); actor.add(leg);
+    cylinder(leg, .14, .15, .34, trousers, 0, -.14, 0, 10);
+    cylinder(leg, .12, .13, .34, trousers, 0, -.46, 0, 10);
+    const shoe = box(leg, .22, .12, .34, shoeMat, 0, -.66, -.055);
     legs.push(leg);
   }
   const beadMat = mat('#e2bc75', .35, .15);
   for (let i = 0; i < 9; i++) {
     const a = i * Math.PI * 2 / 9;
-    sphere(torso, .042, beadMat, Math.sin(a) * .2, .98 + Math.cos(a) * .14, .23, 6);
+    sphere(torso, .032, beadMat, Math.sin(a) * .18, 1.0 + Math.cos(a) * .12, -.32, 7);
   }
   const name = new THREE.Sprite(new THREE.SpriteMaterial({ map: labelTexture(''), transparent: true, depthTest: false }));
-  name.scale.set(2.35, .58, 1); name.position.set(0, 2.35, 0); name.renderOrder = 5; actor.add(name);
-  actor.userData = { torso, arms, legs, robeMat, sashMat, name, currentName: '', lastProfile: '' };
+  name.scale.set(2.35, .58, 1); name.position.set(0, 2.3, 0); name.renderOrder = 5; actor.add(name);
+  actor.userData = { torso, arms, legs, robeMat, sashMat, maleHair, femaleHair, femaleSash, name, currentName: '', lastProfile: '' };
   return actor;
 }
 
@@ -517,13 +548,15 @@ let activeInside = null, yaw = 0, tilt = .24, walking = false, frame = 0, actorH
 function refreshProfile() {
   const profile = game.getProfile(), d = actor.userData;
   const name = profile?.name || '';
-  const signature = `${name}|${profile?.avatar || ''}`;
+  const gender = profile?.gender || (profile?.avatar === 'tam-sen' ? 'female' : 'male');
+  const signature = `${name}|${profile?.avatar || ''}|${gender}`;
   if (signature === d.lastProfile) return;
   d.lastProfile = signature;
   d.name.material.map?.dispose(); d.name.material.map = labelTexture(name || 'HÀNH GIẢ'); d.name.material.needsUpdate = true;
   const palette = { 'hanh-gia': ['#557760', '#a64837'], 'lu-khach': ['#536a7d', '#ad7642'], 'tam-sen': ['#9a6678', '#c79b51'], 'giu-niem': ['#685b83', '#b2533a'] };
   const colors = palette[profile?.avatar] || palette['hanh-gia'];
   d.robeMat.color.set(colors[0]); d.sashMat.color.set(colors[1]);
+  d.maleHair.visible = gender !== 'female'; d.femaleHair.visible = gender === 'female'; d.femaleSash.visible = gender === 'female';
 }
 
 function positionTargets() {
