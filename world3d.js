@@ -159,7 +159,7 @@ function building(parent, { x, z, width, depth, wallHeight, name, tiers = 1, mai
   const group = new THREE.Group(); group.position.set(x, 0, z); parent.add(group);
   box(group, width + .6, .34, depth + .55, materials.stone, 0, .16, 0);
   if (main) {
-    const wallY = .34 + wallHeight * .5, sideThickness = .58, opening = width * .48, wingWidth = (width - opening) * .5;
+    const wallY = .34 + wallHeight * .5, sideThickness = .58, opening = width * .68, wingWidth = (width - opening) * .5;
     box(group, width, wallHeight, sideThickness, materials.wall, 0, wallY, -depth * .5 + sideThickness * .5);
     for (const side of [-1, 1]) {
       box(group, sideThickness, wallHeight, depth, materials.wall, side * (width * .5 - sideThickness * .5), wallY, 0);
@@ -382,6 +382,7 @@ function makeCourtyard() {
 let fish = [], smoke = [], bell = null, bellWobble = 0;
 function makePond(pos) {
   const group = new THREE.Group(); group.position.set(pos.x * 2, 0, pos.z * 2); courtyard.add(group);
+  group.scale.setScalar(.78);
   const border = mesh(group, new THREE.CylinderGeometry(4.15, 4.25, .42, 40), materials.stone, 0, .06, 0);
   const water = mesh(group, new THREE.CircleGeometry(3.92, 40), materials.water, 0, .29, 0, { cast: false }); water.rotation.x = -Math.PI / 2;
   const edge = mesh(group, new THREE.TorusGeometry(4, .16, 8, 48), materials.wallDark, 0, .32, 0); edge.rotation.x = Math.PI / 2;
