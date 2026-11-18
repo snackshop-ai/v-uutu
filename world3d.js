@@ -155,10 +155,10 @@ function plaque(parent, text, x, y, z, width = 2.1) {
   return mesh(parent, new THREE.PlaneGeometry(width, width * .25), signMaterial, x, y, z, { cast: false });
 }
 
-function building(parent, { x, z, width, depth, wallHeight, name, tiers = 1, main = false }) {
+function building(parent, { x, z, width, depth, wallHeight, name, tiers = 1, main = false, openFront = false }) {
   const group = new THREE.Group(); group.position.set(x, 0, z); parent.add(group);
   box(group, width + .6, .34, depth + .55, materials.stone, 0, .16, 0);
-  if (main) {
+  if (main || openFront) {
     const wallY = .34 + wallHeight * .5, sideThickness = .58, opening = width * .68, wingWidth = (width - opening) * .5;
     box(group, width, wallHeight, sideThickness, materials.wall, 0, wallY, -depth * .5 + sideThickness * .5);
     for (const side of [-1, 1]) {
@@ -171,7 +171,7 @@ function building(parent, { x, z, width, depth, wallHeight, name, tiers = 1, mai
     cylinder(group, .18, .23, wallHeight + .23, materials.red, side * (width * .43), .34 + wallHeight * .5, frontBack * depth * .42, 12);
   }
   // The main hall has an open front so its altar and Buddha statues can be seen from the courtyard.
-  if (!main) {
+  if (!main && !openFront) {
     box(group, width * .35, wallHeight * .76, .13, materials.darkWood, 0, .34 + wallHeight * .4, depth * .5 + .085);
     for (const side of [-1, 1]) {
       box(group, width * .14, wallHeight * .74, .1, materials.redLight, side * width * .26, .34 + wallHeight * .4, depth * .5 + .1);
@@ -209,8 +209,34 @@ function building(parent, { x, z, width, depth, wallHeight, name, tiers = 1, mai
       sphere(group, .035, new THREE.MeshBasicMaterial({ color: '#ff7436' }), i * .09, 1.16, depth * .18, 6);
     }
   }
+  if (openFront) makeShopkeeper(group, 0, .34, -depth * .03);
   const label = addLabel(group, name || '', 0, wallHeight + 2.0 + (tiers > 1 ? wallHeight * .5 : 0), 0, Math.max(2.25, width * .43));
   return { group, label };
+}
+
+function makeShopkeeper(parent, x, y, z) {
+  const seller = new THREE.Group(); seller.position.set(x, y, z); parent.add(seller);
+  const robe = mat('#8b5540'), apron = mat('#d2a85d'), skin = mat('#efcdb4'), dark = mat('#453a36');
+  // A friendly, bald shopkeeper is visible through the open front of the shop.
+  const body = sphere(seller, .42, robe, 0, .72, 0, 12); body.scale.set(1.15, 1.15, .78);
+  box(seller, .54, .12, .34, apron, 0, .75, -.04);
+  cylinder(seller, .12, .12, .12, mat('#eee0c9'), 0, 1.13, 0, 12);
+  const head = sphere(seller, .24, skin, 0, 1.43, -.02, 14); head.scale.set(.94, 1.08, .9);
+  for (const side of [-1, 1]) {
+    sphere(seller, .018, dark, side * .075, 1.45, -.229, 7);
+    sphere(seller, .035, skin, side * .215, 1.43, -.015, 8);
+    const arm = new THREE.Group(); arm.position.set(side * .35, .96, -.02); seller.add(arm);
+    beam(arm, [0, 0, 0], [-side * .14, -.25, -.24], .085, robe, 8);
+    sphere(arm, .06, skin, -side * .14, -.25, -.24, 8);
+  }
+  // A low counter and display vessels give the stall a clear shopping purpose.
+  box(seller, 1.35, .16, .5, mat('#684536'), 0, .53, .46);
+  box(seller, 1.22, .08, .42, mat('#bd9458'), 0, .65, .46);
+  for (let i = 0; i < 3; i++) {
+    const colors = [mat('#9b4738'), mat('#d5b967'), mat('#71908a')];
+    cylinder(seller, .09, .12, .2, colors[i], -.38 + i * .38, .79, .46, 8);
+    cylinder(seller, .08, .08, .035, mat('#e9d3a6'), -.38 + i * .38, .91, .46, 8);
+  }
 }
 
 function tree(parent, x, z, size = 1, pine = true, baseY = 0) {
@@ -369,7 +395,7 @@ function makeCourtyard() {
   gate(courtyard, 0, 0, 10.5);
   const zones = game.getZones();
   const positions = Object.fromEntries(zones.map(z => [z.id, { x: z.x * 2, z: z.z * 2 }]));
-  building(courtyard, { ...positions.shop, width: 4.4, depth: 3.6, wallHeight: 2.8, name: 'SẮM LỄ' });
+  building(courtyard, { ...positions.shop, width: 4.4, depth: 3.6, wallHeight: 2.8, name: 'SẮM LỄ', openFront: true });
   building(courtyard, { ...positions.hall, z: positions.hall.z - .7, width: 8.8, depth: 6.4, wallHeight: 4.2, name: 'CHÍNH ĐIỆN', tiers: 2, main: true });
   building(courtyard, { ...positions.dining, width: 5.4, depth: 4.0, wallHeight: 3.1, name: 'TRAI ĐƯỜNG' });
   building(courtyard, { ...positions.tea, width: 4.2, depth: 3.0, wallHeight: 2.8, name: 'TRÀ THẤT' });
@@ -475,47 +501,52 @@ function makeBellTower(pos) {
 function makeCharacter() {
   const actor = new THREE.Group(); scene.add(actor);
   actor.scale.set(.84, .84, .84);
-  const robeMat = mat('#77766f', .9), sashMat = mat('#4b4a45', .78), skinMat = mat('#d8b38f', .92), dark = mat('#332c2b');
-  const trousers = mat('#514033'), shoeMat = mat('#46372c'), soleMat = mat('#2f2822'), eyeWhite = mat('#f2eee4'), iris = mat('#382d27');
+  // Warm saffron robes and soft childlike proportions follow the supplied novice illustration.
+  const robeMat = mat('#e6b64b', .94), sashMat = mat('#855d3e', .82), skinMat = mat('#f4d5c9', .95), dark = mat('#63484a');
+  const trousers = mat('#d99b39'), shoeMat = mat('#756047'), soleMat = mat('#524438'), eyeWhite = mat('#fff8f0'), iris = mat('#382d35');
   const torso = new THREE.Group(); actor.add(torso);
-  mesh(torso, new THREE.CylinderGeometry(.29, .43, .86, 18), robeMat, 0, .87, 0);
-  mesh(torso, new THREE.CylinderGeometry(.3, .49, .42, 18), robeMat, 0, .43, 0);
-  cylinder(torso, .34, .35, .105, sashMat, 0, .75, 0, 18);
+  const body = mesh(torso, new THREE.CylinderGeometry(.29, .53, .92, 18), robeMat, 0, .86, 0); body.scale.z = .9;
+  mesh(torso, new THREE.CylinderGeometry(.3, .52, .42, 18), robeMat, 0, .43, 0);
+  cylinder(torso, .34, .4, .105, sashMat, 0, .75, 0, 18);
   cylinder(torso, .435, .48, .09, mat('#b79a68'), 0, .235, 0, 18);
   // Layered novice robes, a crossed collar and a shoulder sash form the temple look.
-  box(torso, .12, .48, .035, sashMat, -.065, 1.12, -.315).rotation.z = -.22;
-  box(torso, .12, .48, .035, mat('#d8c49a'), .065, 1.12, -.315).rotation.z = .22;
-  box(torso, .1, .55, .045, sashMat, .09, 1.04, -.335).rotation.z = -.12;
+  box(torso, .15, .52, .045, sashMat, -.07, 1.1, -.33).rotation.z = -.22;
+  box(torso, .15, .52, .045, robeMat, .07, 1.1, -.33).rotation.z = .22;
+  box(torso, .13, .58, .05, sashMat, .1, 1.03, -.35).rotation.z = -.12;
   const neck = cylinder(torso, .09, .105, .2, skinMat, 0, 1.4, 0, 12);
   neck.castShadow = true;
-  const head = sphere(torso, .235, skinMat, 0, 1.68, 0, 18); head.scale.set(.9, 1.08, .82);
+  const head = sphere(torso, .29, skinMat, 0, 1.69, 0, 20); head.scale.set(.91, 1.08, .86);
   for (const side of [-1, 1]) sphere(torso, .065, skinMat, side * .205, 1.68, -.005, 9);
   // Eyes, brows, nose and mouth face toward the character's forward (-Z) direction.
   for (const side of [-1, 1]) {
-    sphere(torso, .038, eyeWhite, side * .082, 1.725, -.177, 9);
-    sphere(torso, .02, iris, side * .082, 1.724, -.209, 8);
-    box(torso, .085, .022, .025, dark, side * .082, 1.78, -.178);
+    const closedEye = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(side * .15, 1.716, -.24),
+      new THREE.Vector3(side * .115, 1.696, -.267),
+      new THREE.Vector3(side * .075, 1.692, -.279),
+      new THREE.Vector3(side * .035, 1.716, -.281)
+    ]);
+    mesh(torso, new THREE.TubeGeometry(closedEye, 10, .009, 5, false), dark, 0, 0, 0);
   }
-  sphere(torso, .036, skinMat, 0, 1.69, -.215, 8);
-  box(torso, .075, .014, .018, mat('#815950'), 0, 1.615, -.184);
-  // Both novice looks have a shaved head; the male option keeps a fine tonsure texture.
+  sphere(torso, .03, skinMat, 0, 1.68, -.29, 9);
+  for (const side of [-1, 1]) sphere(torso, .045, mat('#efaaa4'), side * .16, 1.635, -.205, 9);
+  // Tiny gentle smile and clean shaved scalp, as in the reference illustration.
+  const smile = mesh(torso, new THREE.TorusGeometry(.042, .008, 5, 12, Math.PI), mat('#a56c70'), 0, 1.61, -.246); smile.rotation.z = Math.PI;
+  // The child novice has a smooth, fully shaved head for both character options.
   const maleHair = new THREE.Group(); torso.add(maleHair);
-  const stubble = mat('#92745c', 1);
-  for (let row = 0; row < 4; row++) for (let col = -3; col <= 3; col++) {
-    const x = col * .052, z = -.005 + row * .043, norm = (x / .211) ** 2 + (z / .193) ** 2;
-    if (norm < .82) sphere(maleHair, .009, stubble, x, 1.68 + .254 * Math.sqrt(1 - norm) + .003, z, 5);
-  }
+  const smoothScalpMale = sphere(maleHair, .29, skinMat, 0, 1.705, .004, 18); smoothScalpMale.scale.set(.91, 1.07, .86);
   const femaleHair = new THREE.Group(); torso.add(femaleHair);
   // A smooth scalp keeps the novice appearance while preserving the selected gender.
-  const smoothScalp = sphere(femaleHair, .237, mat('#d2ae8e', .95), 0, 1.695, .004, 16); smoothScalp.scale.set(.9, 1.07, .83);
+  const smoothScalp = sphere(femaleHair, .29, skinMat, 0, 1.705, .004, 18); smoothScalp.scale.set(.91, 1.07, .86);
   const femaleSash = new THREE.Group(); torso.add(femaleSash);
   beam(femaleSash, [-.3, 1.3, -.18], [.28, .78, -.2], .06, sashMat, 8);
   sphere(femaleSash, .05, materials.gold, .28, .78, -.2, 8);
   const arms = [], legs = [];
   for (const side of [-1, 1]) {
     const arm = new THREE.Group(); arm.position.set(side * .34, 1.23, 0); torso.add(arm);
-    sphere(arm, .16, robeMat, 0, -.015, 0, 10);
-    cylinder(arm, .125, .105, .42, robeMat, 0, -.22, 0, 10);
+    arm.visible = false; // replaced by the joined, prayer-pose sleeves below
+    const sleeve = sphere(arm, .205, robeMat, 0, -.12, -.015, 12); sleeve.scale.set(1, 1.32, 1.12);
+    cylinder(arm, .17, .13, .42, robeMat, 0, -.28, 0, 12);
+    cylinder(arm, .15, .14, .08, sashMat, 0, -.49, -.01, 12);
     cylinder(arm, .095, .085, .36, skinMat, 0, -.59, -.015, 10);
     sphere(arm, .085, skinMat, 0, -.79, -.025, 9); arms.push(arm);
     const leg = new THREE.Group(); leg.position.set(side * .16, .68, 0); actor.add(leg);
@@ -526,6 +557,13 @@ function makeCharacter() {
     box(leg, .21, .055, .25, shoeMat, 0, -.655, -.065);
     box(leg, .2, .035, .07, robeMat, 0, -.62, -.18);
     legs.push(leg);
+  }
+  // Joined palms rest in front of the heart, matching the meditative reference pose.
+  for (const side of [-1, 1]) {
+    const sleeve = beam(torso, [side * .28, 1.2, -.05], [side * .075, .93, -.42], .115, robeMat, 10);
+    sleeve.scale.set(1, 1, .88);
+    const palm = sphere(torso, .095, skinMat, side * .045, .91, -.445, 12); palm.scale.set(.56, 1.18, .56);
+    const thumb = sphere(torso, .045, skinMat, side * .018, .985, -.455, 9); thumb.scale.set(.8, 1.35, .7);
   }
   const beadMat = mat('#e2bc75', .35, .15);
   for (let i = 0; i < 18; i++) {
@@ -556,12 +594,12 @@ function refreshProfile() {
   if (signature === d.lastProfile) return;
   d.lastProfile = signature;
   d.name.material.map?.dispose(); d.name.material.map = labelTexture(name || 'HÀNH GIẢ'); d.name.material.needsUpdate = true;
-  const palette = { 'hanh-gia': ['#77766f', '#4b4a45'], 'lu-khach': ['#85847d', '#55534e'], 'tam-sen': ['#8a8982', '#5c5a54'], 'giu-niem': ['#6d6c66', '#45443f'] };
+  const palette = { 'hanh-gia': ['#e6b64b', '#855d3e'], 'lu-khach': ['#edc65d', '#916744'], 'tam-sen': ['#e4b84f', '#825a40'], 'giu-niem': ['#ddb047', '#78543d'] };
   const colors = palette[profile?.avatar] || palette['hanh-gia'];
   d.robeMat.color.set(colors[0]); d.sashMat.color.set(colors[1]);
-  d.maleHair.visible = gender !== 'female'; d.femaleHair.visible = gender === 'female'; d.femaleSash.visible = true;
-  d.torso.scale.x = gender === 'female' ? .95 : 1;
-  d.head.scale.set(gender === 'female' ? .88 : .9, gender === 'female' ? 1.1 : 1.08, .82);
+  d.maleHair.visible = gender !== 'female'; d.femaleHair.visible = gender === 'female'; d.femaleSash.visible = false;
+  d.torso.scale.x = 1;
+  d.head.scale.set(.91, 1.08, .86);
 }
 
 function positionTargets() {
@@ -682,4 +720,5 @@ window.voUu3d = {
 };
 resize();
 renderer.setAnimationLoop(animate);
+
 
