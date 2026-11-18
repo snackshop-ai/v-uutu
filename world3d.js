@@ -359,6 +359,10 @@ function makeCourtyard() {
     box(courtyard, .35, 1.1, 42, boundaryMaterial, x, .4, -2);
     for (let z = -22; z <= 18; z += 3) cylinder(courtyard, .13, .16, .6, materials.gold, x, 1.2, z, 8);
   }
+  for (const z of [-22, 18]) {
+    box(courtyard, 40, 1.1, .35, boundaryMaterial, 0, .4, z);
+    for (let x = -20; x <= 20; x += 3) cylinder(courtyard, .13, .16, .6, materials.gold, x, 1.2, z, 8);
+  }
   // Main stone axis and the gate at its head.
   box(courtyard, 4.2, .13, 24, materials.wallDark, 0, -.03, 2);
   for (let z = -12; z < 12; z += 1.4) for (const x of [-1.2, 0, 1.2]) box(courtyard, 1.08, .018, 1.18, materials.stone, x, .045, z, { cast: false });
