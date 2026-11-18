@@ -158,16 +158,26 @@ function plaque(parent, text, x, y, z, width = 2.1) {
 function building(parent, { x, z, width, depth, wallHeight, name, tiers = 1, main = false }) {
   const group = new THREE.Group(); group.position.set(x, 0, z); parent.add(group);
   box(group, width + .6, .34, depth + .55, materials.stone, 0, .16, 0);
-  box(group, width, wallHeight, depth, materials.wall, 0, .34 + wallHeight * .5, 0);
+  if (main) {
+    const wallY = .34 + wallHeight * .5, sideThickness = .58, opening = width * .48, wingWidth = (width - opening) * .5;
+    box(group, width, wallHeight, sideThickness, materials.wall, 0, wallY, -depth * .5 + sideThickness * .5);
+    for (const side of [-1, 1]) {
+      box(group, sideThickness, wallHeight, depth, materials.wall, side * (width * .5 - sideThickness * .5), wallY, 0);
+      box(group, wingWidth, wallHeight, sideThickness, materials.wall, side * (opening * .5 + wingWidth * .5), wallY, depth * .5 - sideThickness * .5);
+    }
+    box(group, opening, .42, sideThickness, materials.wallDark, 0, .34 + wallHeight - .21, depth * .5 - sideThickness * .5);
+  } else box(group, width, wallHeight, depth, materials.wall, 0, .34 + wallHeight * .5, 0);
   for (const side of [-1, 1]) for (const frontBack of [-1, 1]) {
     cylinder(group, .18, .23, wallHeight + .23, materials.red, side * (width * .43), .34 + wallHeight * .5, frontBack * depth * .42, 12);
   }
-  // Carved red door and gold door studs on the entrance side.
-  box(group, width * .35, wallHeight * .76, .13, materials.darkWood, 0, .34 + wallHeight * .4, depth * .5 + .085);
-  for (const side of [-1, 1]) {
-    box(group, width * .14, wallHeight * .74, .1, materials.redLight, side * width * .26, .34 + wallHeight * .4, depth * .5 + .1);
-    for (let row = 0; row < 3; row++) for (let col = 0; col < 2; col++)
-      sphere(group, .035, materials.gold, side * width * .26 + (col ? .12 : -.12), .45 + row * .22, depth * .5 + .17, 7);
+  // The main hall has an open front so its altar and Buddha statues can be seen from the courtyard.
+  if (!main) {
+    box(group, width * .35, wallHeight * .76, .13, materials.darkWood, 0, .34 + wallHeight * .4, depth * .5 + .085);
+    for (const side of [-1, 1]) {
+      box(group, width * .14, wallHeight * .74, .1, materials.redLight, side * width * .26, .34 + wallHeight * .4, depth * .5 + .1);
+      for (let row = 0; row < 3; row++) for (let col = 0; col < 2; col++)
+        sphere(group, .035, materials.gold, side * width * .26 + (col ? .12 : -.12), .45 + row * .22, depth * .5 + .17, 7);
+    }
   }
   for (let i = 0; i < (main ? 6 : 3); i++) {
     const gx = (i - (main ? 2.5 : 1)) * (main ? .36 : .35);
@@ -180,9 +190,24 @@ function building(parent, { x, z, width, depth, wallHeight, name, tiers = 1, mai
     curvedRoof(group, 0, wallHeight + wallHeight * .68, 0, width * .72, depth * .72);
   }
   if (main) {
-    box(group, 2.5, .3, .8, materials.darkWood, 0, .6, -depth * .08);
-    box(group, 1.3, 1.6, .38, materials.gold, 0, 1.55, -depth * .24);
-    sphere(group, .42, materials.gold, 0, 2.48, -depth * .22, 14);
+    box(group, 6.2, .38, 1.2, materials.darkWood, 0, .42, -depth * .28);
+    for (let i = 0; i < 3; i++) {
+      const statue = new THREE.Group(); statue.position.set((i - 1) * 2.15, .62, -depth * .28); group.add(statue);
+      cylinder(statue, .55, .62, .32, materials.gold, 0, .16, 0, 10);
+      const legs = sphere(statue, .5, materials.gold, 0, .46, 0, 12); legs.scale.set(1.15, .48, .82);
+      const robe = sphere(statue, .43, materials.gold, 0, 1.02, 0, 12); robe.scale.set(.9, 1.2, .72);
+      sphere(statue, .29, materials.gold, 0, 1.62, 0, 12);
+      for (const side of [-1, 1]) sphere(statue, .085, materials.gold, side * .3, 1.61, 0, 8);
+      sphere(statue, .12, materials.gold, 0, 1.94, 0, 9);
+      mesh(statue, new THREE.TorusGeometry(.57, .055, 8, 28), materials.gold, 0, 1.62, -.12);
+    }
+    // Small offering burner inside the hall, in front of the altar.
+    cylinder(group, .2, .28, .2, materials.bronze, 0, .62, depth * .18, 10);
+    cylinder(group, .29, .29, .08, materials.gold, 0, .76, depth * .18, 10);
+    for (let i = -1; i <= 1; i++) {
+      const stick = cylinder(group, .018, .025, .38, mat('#913c2f'), i * .09, .96, depth * .18, 6); stick.rotation.z = i * .09;
+      sphere(group, .035, new THREE.MeshBasicMaterial({ color: '#ff7436' }), i * .09, 1.16, depth * .18, 6);
+    }
   }
   const label = addLabel(group, name || '', 0, wallHeight + 2.0 + (tiers > 1 ? wallHeight * .5 : 0), 0, Math.max(2.25, width * .43));
   return { group, label };
@@ -345,6 +370,7 @@ function makeCourtyard() {
   building(courtyard, { ...positions.dining, width: 5.4, depth: 4.0, wallHeight: 3.1, name: 'TRAI ĐƯỜNG' });
   building(courtyard, { ...positions.tea, width: 4.8, depth: 4.0, wallHeight: 2.8, name: 'TRÀ THẤT' });
   makePond(positions.pond);
+  makeMeritStele(positions.pond);
   makeCenser(positions.censer);
   makeBellTower(positions.bell);
   for (const pos of [[-14, 8], [14, 8], [-14, -8], [14, -8], [-13, -15], [13, -15], [-10, 15], [10, 15]]) tree(courtyard, pos[0], pos[1], 1.1, true);
@@ -372,6 +398,35 @@ function makePond(pos) {
   border.receiveShadow = true;
 }
 
+let meritStele = null;
+function makeMeritStele(pos) {
+  const group = new THREE.Group();
+  group.position.set(pos.x * 2, 0, pos.z * 2 + 4);
+  courtyard.add(group);
+  box(group, 2.05, .28, .9, materials.stone, 0, .14, 0);
+  box(group, 1.7, 2.0, .34, materials.riser, 0, 1.25, 0);
+  box(group, 1.95, .22, .58, materials.wallDark, 0, .27, 0);
+  const canvas = document.createElement('canvas'); canvas.width = 512; canvas.height = 320;
+  const ctx = canvas.getContext('2d');
+  const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace;
+  const board = mesh(group, new THREE.PlaneGeometry(1.48, 1.44), new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide }), 0, 1.3, .181, { cast: false });
+  const backBoard = board.clone(); backBoard.position.z = -.181; backBoard.rotation.y = Math.PI; group.add(backBoard);
+  meritStele = { canvas, ctx, texture, count: -1 };
+  paintMeritStele(game.getState().releasedFish || 0);
+}
+function paintMeritStele(count) {
+  if (!meritStele || meritStele.count === count) return;
+  const { canvas, ctx, texture } = meritStele;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#3f433a'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.strokeStyle = '#d6b56b'; ctx.lineWidth = 10; ctx.strokeRect(13, 13, canvas.width - 26, canvas.height - 26);
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#f3dda5';
+  ctx.font = 'bold 42px serif'; ctx.fillText('CÔNG ĐỨC BIA', 256, 86);
+  ctx.fillStyle = '#f8f3df'; ctx.font = '30px sans-serif'; ctx.fillText('Cá phóng sinh', 256, 166);
+  ctx.fillStyle = '#f3dda5'; ctx.font = 'bold 48px serif'; ctx.fillText(`${count} con`, 256, 240);
+  meritStele.count = count; texture.needsUpdate = true;
+}
+
 function makeCenser(pos) {
   const group = new THREE.Group(); group.position.set(pos.x * 2, 0, pos.z * 2); courtyard.add(group);
   cylinder(group, .42, .68, .35, materials.gold, 0, .24, 0, 12);
@@ -379,13 +434,17 @@ function makeCenser(pos) {
   cylinder(group, .73, .73, .09, materials.gold, 0, .58, 0, 14);
   cylinder(group, .57, .5, .48, materials.bronze, 0, .86, 0, 14);
   cylinder(group, .7, .72, .13, materials.gold, 0, 1.13, 0, 14);
-  sphere(group, .56, materials.darkWood, 0, 1.19, 0, 12);
+  cylinder(group, .56, .56, .07, materials.darkWood, 0, 1.17, 0, 14);
+  cylinder(group, .48, .48, .055, mat('#332d27'), 0, 1.28, 0, 14);
+  const ember = new THREE.MeshBasicMaterial({ color: '#ff9c36' });
+  sphere(group, .2, ember, 0, 1.32, 0, 8);
   for (const side of [-1, 1]) {
     beam(group, [side * .56, .88, 0], [side * .98, 1.09, 0], .095, materials.gold);
     sphere(group, .12, materials.gold, side * .99, 1.12, 0, 8);
   }
   for (let i = 0; i < 3; i++) {
-    const stick = cylinder(group, .025, .035, .52, mat('#913c2f'), (i - 1) * .14, 1.47, 0, 6); stick.rotation.z = (i - 1) * .11;
+    const stick = cylinder(group, .025, .035, .62, mat('#913c2f'), (i - 1) * .14, 1.43, 0, 6); stick.rotation.z = (i - 1) * .11;
+    sphere(group, .052, new THREE.MeshBasicMaterial({ color: '#ff6a32' }), (i - 1) * .14, 1.75, 0, 7);
   }
   for (let i = 0; i < 12; i++) {
     const s = sphere(group, .16 + (i % 3) * .025, new THREE.MeshBasicMaterial({ color: '#fff1d4', transparent: true, opacity: .2, depthWrite: false }), Math.sin(i * 3) * .28, 1.72 + i * .34, Math.cos(i * 2.7) * .2, 8);
@@ -535,6 +594,7 @@ function animate() {
     item.group.rotation.y = Math.atan2(Math.cos(elapsed * .48 + item.phase), Math.sin(elapsed * .7 + item.phase));
   }
   for (const item of smoke) { item.mesh.position.y = item.baseY + ((elapsed * .18 + item.phase) % 1.5); item.mesh.material.opacity = .18 * (1 - ((elapsed * .18 + item.phase) % 1.5) / 1.5); item.mesh.position.x = Math.sin(elapsed + item.phase) * .22; }
+  paintMeritStele(game.getState().releasedFish || 0);
   if (bell) { bellWobble *= Math.exp(-dt * 3.6); bell.rotation.z = Math.sin(elapsed * 24) * bellWobble * .08; }
   climb.children.filter(o => o.name === 'cloud').forEach(o => { o.position.x = o.userData.initialX + Math.sin(elapsed * o.userData.drift + o.position.z) * 1.2; });
   renderer.render(scene, camera);
