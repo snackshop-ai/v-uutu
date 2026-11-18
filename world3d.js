@@ -368,12 +368,12 @@ function makeCourtyard() {
   building(courtyard, { ...positions.shop, width: 4.4, depth: 3.6, wallHeight: 2.8, name: 'SẮM LỄ' });
   building(courtyard, { ...positions.hall, z: positions.hall.z - .7, width: 8.8, depth: 6.4, wallHeight: 4.2, name: 'CHÍNH ĐIỆN', tiers: 2, main: true });
   building(courtyard, { ...positions.dining, width: 5.4, depth: 4.0, wallHeight: 3.1, name: 'TRAI ĐƯỜNG' });
-  building(courtyard, { ...positions.tea, width: 4.8, depth: 4.0, wallHeight: 2.8, name: 'TRÀ THẤT' });
+  building(courtyard, { ...positions.tea, width: 4.8, depth: 3.0, wallHeight: 2.8, name: 'TRÀ THẤT' });
   makePond(positions.pond);
   makeMeritStele(positions.pond);
   makeCenser(positions.censer);
   makeBellTower(positions.bell);
-  for (const pos of [[-14, 8], [14, 8], [-14, -8], [14, -8], [-13, -15], [13, -15], [-10, 15], [10, 15]]) tree(courtyard, pos[0], pos[1], 1.1, true);
+  for (const pos of [[-14, 8], [-14, -8], [14, -8], [-13, -15], [13, -15], [-10, 15], [10, 15]]) tree(courtyard, pos[0], pos[1], 1.1, true);
   for (const [x, z] of [[-9, 2], [9, 2], [-9, -9], [9, -9]]) lantern(courtyard, x, 0, z, .9);
   const boundaryShrine = building(courtyard, { x: 0, z: -14, width: 4.2, depth: 3.4, wallHeight: 2.6, name: 'TAM QUAN' });
   boundaryShrine.group.scale.set(.78, .78, .78);
