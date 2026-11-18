@@ -475,7 +475,7 @@ function makeBellTower(pos) {
 function makeCharacter() {
   const actor = new THREE.Group(); scene.add(actor);
   actor.scale.set(.84, .84, .84);
-  const robeMat = mat('#c86a2c', .9), sashMat = mat('#873b26', .78), skinMat = mat('#d8b38f', .92), dark = mat('#332c2b');
+  const robeMat = mat('#77766f', .9), sashMat = mat('#4b4a45', .78), skinMat = mat('#d8b38f', .92), dark = mat('#332c2b');
   const trousers = mat('#514033'), shoeMat = mat('#46372c'), soleMat = mat('#2f2822'), eyeWhite = mat('#f2eee4'), iris = mat('#382d27');
   const torso = new THREE.Group(); actor.add(torso);
   mesh(torso, new THREE.CylinderGeometry(.29, .43, .86, 18), robeMat, 0, .87, 0);
@@ -556,7 +556,7 @@ function refreshProfile() {
   if (signature === d.lastProfile) return;
   d.lastProfile = signature;
   d.name.material.map?.dispose(); d.name.material.map = labelTexture(name || 'HÀNH GIẢ'); d.name.material.needsUpdate = true;
-  const palette = { 'hanh-gia': ['#c86a2c', '#873b26'], 'lu-khach': ['#b95b2b', '#74402b'], 'tam-sen': ['#d4833c', '#97522b'], 'giu-niem': ['#b75a36', '#6b3526'] };
+  const palette = { 'hanh-gia': ['#77766f', '#4b4a45'], 'lu-khach': ['#85847d', '#55534e'], 'tam-sen': ['#8a8982', '#5c5a54'], 'giu-niem': ['#6d6c66', '#45443f'] };
   const colors = palette[profile?.avatar] || palette['hanh-gia'];
   d.robeMat.color.set(colors[0]); d.sashMat.color.set(colors[1]);
   d.maleHair.visible = gender !== 'female'; d.femaleHair.visible = gender === 'female'; d.femaleSash.visible = true;
