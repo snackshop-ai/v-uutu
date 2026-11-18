@@ -512,7 +512,7 @@ makeCourtyard();
 const actor = makeCharacter();
 const clock = new THREE.Clock();
 const cameraTarget = new THREE.Vector3(), cameraDesired = new THREE.Vector3(), lookTarget = new THREE.Vector3();
-let activeInside = null, yaw = 0, tilt = .24, walking = false, frame = 0;
+let activeInside = null, yaw = 0, tilt = .24, walking = false, frame = 0, actorHeading = Math.PI, targetActorHeading = Math.PI;
 
 function refreshProfile() {
   const profile = game.getProfile(), d = actor.userData;
@@ -534,7 +534,7 @@ function positionTargets() {
   if (inside !== activeInside) {
     activeInside = inside; climb.visible = !inside; courtyard.visible = inside;
     actor.position.set(inside ? (state.worldX || 0) * 2 : 0, inside ? 0.12 : climbY, inside ? (state.worldZ ?? 3) * 2 : step * trail.depth);
-    yaw = 0; tilt = .24;
+    yaw = 0; tilt = .24; actorHeading = targetActorHeading = inside ? 0 : Math.PI;
     scene.fog.near = inside ? 25 : 34; scene.fog.far = inside ? 78 : 125;
   }
   const targetX = inside ? (state.worldX || 0) * 2 : 0;
@@ -544,7 +544,7 @@ function positionTargets() {
   actor.userData.targetX = targetX; actor.userData.targetY = targetY; actor.userData.targetZ = targetZ;
   const profile = game.getProfile();
   const forwardX = Math.sin(yaw), forwardZ = Math.cos(yaw) * (inside ? -1 : 1);
-  actor.rotation.y = Math.atan2(forwardX, -forwardZ);
+  actor.rotation.y = actorHeading;
   const behind = inside ? 1 : -1;
   cameraDesired.set(targetX - forwardX * 6.4, targetY + 3.35 + tilt * 4, targetZ + behind * Math.cos(yaw) * 7.1);
   lookTarget.set(targetX + forwardX * 2.7, targetY + 1.05, targetZ + forwardZ * 3.7);
@@ -579,6 +579,8 @@ function animate() {
     bird.position.y = bird.userData.baseY + Math.sin(elapsed * 1.3 + i) * .035;
   }
   const d = actor.userData, dx = d.targetX - actor.position.x, dy = d.targetY - actor.position.y, dz = d.targetZ - actor.position.z;
+  const turnDelta = Math.atan2(Math.sin(targetActorHeading - actorHeading), Math.cos(targetActorHeading - actorHeading));
+  actorHeading += turnDelta * (1 - Math.exp(-dt * 16)); actor.rotation.y = actorHeading;
   const distance = Math.hypot(dx, dz);
   walking = distance > .035;
   const ease = 1 - Math.exp(-dt * (walking ? 4.3 : 7.2));
@@ -630,6 +632,14 @@ window.voUu3d = {
       window.voUuBirdTimer = setTimeout(sing, 9000 + Math.random() * 9000);
     };
     window.voUuBirdTimer = setTimeout(sing, 1800 + Math.random() * 1800);
+  },
+  faceDirection(direction) {
+    const headings = game.getState().inside
+      ? { up: 0, down: Math.PI, left: Math.PI / 2, right: -Math.PI / 2 }
+      : { up: Math.PI, down: 0 };
+    if (!(direction in headings)) return false;
+    targetActorHeading = headings[direction];
+    return Math.abs(Math.atan2(Math.sin(targetActorHeading - actorHeading), Math.cos(targetActorHeading - actorHeading))) > .08;
   },
 };
 resize();
