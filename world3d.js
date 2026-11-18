@@ -304,6 +304,8 @@ function gate(parent, x, y, z) {
   box(group, 10, .38, .62, materials.darkWood, 0, 5.35, 0);
   box(group, 2.5, 1.04, .2, materials.darkWood, 0, 4.18, .38);
   plaque(group, 'VÔ ƯU TỰ', 0, 4.18, .5, 2.8);
+  const approachPlaque = plaque(group, 'VÔ ƯU TỰ', 0, 4.18, .26, 2.8);
+  approachPlaque.rotation.y = Math.PI;
   curvedRoof(group, 0, 5.52, 0, 11.2, 3.6);
   for (const px of [-3.3, 0, 3.3]) {
     cylinder(group, .12, .12, .38, materials.gold, px, 6.46, 0, 8);
